@@ -8,9 +8,14 @@ const passport = require("passport");
 const socketio = require("socket.io");
 const session = require("express-session");
 const http = require("http");
-
 const app = express();
-const server = http.createServer(app);
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
+
+
+
+
+
 const port = process.env.PORT || 3001;
 const routes = require("./routes/routes");
 const { User } = require("./models/userSchema");
@@ -47,7 +52,6 @@ connect(uri, {
 });
 
 passport.serializeUser((profile, done) => {
-  console.log(profile);
   User.findOne({
     id: profile.id,
     username: profile.displayName,
@@ -76,14 +80,14 @@ passport.serializeUser((profile, done) => {
     .catch(err => console.log(err));
 });
 
-passport.deserializeUser((user, done) => {
-  done(null, user);
+passport.deserializeUser((profile, done) => {
+  done(null, profile);
 });
 
 app.get(
   "/login",
   passport.authenticate("auth0", {
-    successRedirect: "http://localhost:3000/",
+    successRedirect: "http://localhost:3000/#/home",
     failureRedirect: "http://localhost:3000/#/"
   })
 );
@@ -91,7 +95,16 @@ app.get(
 app.get("/me", getUser);
 app.get("/logout", logout);
 
+
+
+io.on('connection', function (socket) {
+  socket.broadcast.emit('user connected');
+});
+
+
+
 routes(app);
+
 connection.once("open", () => {
   console.log(`we in boyyyyys`);
 });
